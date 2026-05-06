@@ -43,7 +43,6 @@ export default function App() {
       {selectedMovie && <MovieModal movie={selectedMovie} onClose={handleClose}/>}
       {isLoading && <Loader/>}
       {isError && <ErrorMessage/>}
-      <Toaster/>
       <SearchBar onSubmit={handleSubmit}/>
       {isSuccess && totalPages > 1 && 
         <Pagination
