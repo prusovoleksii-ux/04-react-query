@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SearchBar from '../SearchBar/SearchBar';
+import toast, { Toaster } from 'react-hot-toast';
 import { fetchMovies } from '../../services/movieService';
 import MovieGrid from '../MovieGrid/MovieGrid';
 import type { Movie } from '../../types/movie';
@@ -15,14 +16,12 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-
   const {data, isLoading, isError, isSuccess} = useQuery({
     queryKey: ['list', query, currentPage],
     queryFn: () => fetchMovies(query, currentPage),
     enabled: query !== '',
     placeholderData: keepPreviousData,
   });
-
   const totalPages = data?.total_pages ?? 0;
   
   const handleSubmit = async (query: string) => {
@@ -38,12 +37,17 @@ export default function App() {
     setSelectedMovie(null);
   }
 
+  useEffect(() => {
+    if (isSuccess && data.results.length === 0) toast.error("No movies found.") 
+  }, [isSuccess, data?.results.length]);
+
   return (
     <>
       {selectedMovie && <MovieModal movie={selectedMovie} onClose={handleClose}/>}
+      <Toaster/>
+      <SearchBar onSubmit={handleSubmit}/>
       {isLoading && <Loader/>}
       {isError && <ErrorMessage/>}
-      <SearchBar onSubmit={handleSubmit}/>
       {isSuccess && totalPages > 1 && 
         <Pagination
           totalPages={totalPages}
