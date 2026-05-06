@@ -7,32 +7,28 @@ import type { Movie } from '../../types/movie';
 import Loader from '../Loader/Loader';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
 import MovieModal from '../MovieModal/MovieModal';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import Pagination from '../Pagination/Pagination';
 
 export default function App() {
 
-  const [movies, setMovies] = useState<Movie[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
+  const [query, setQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+
+
+  const {data, isLoading, isError, isSuccess} = useQuery({
+    queryKey: ['list', query, currentPage],
+    queryFn: () => fetchMovies(query, currentPage),
+    enabled: query !== '',
+    placeholderData: keepPreviousData,
+  });
+
+  const totalPages = data?.total_pages ?? 0;
   
   const handleSubmit = async (query: string) => {
-    setIsError(false);
-    setMovies([]);
-    setIsLoading(true);
-    
-    try {
-      const movieList = await fetchMovies(query);
-
-      if (movieList.length < 1) {
-        setIsError(true);
-        toast.error('No movies found for your request.');
-      } else setMovies(movieList);
-
-    } catch {
-      setIsError(true);
-      toast.error('An error has occured.');
-
-    } finally {setIsLoading(false);}
+    setQuery(query);
+    setCurrentPage(1);
   }
 
   const handleSelect = (movie: Movie) => {
@@ -50,7 +46,16 @@ export default function App() {
       {isError && <ErrorMessage/>}
       <Toaster/>
       <SearchBar onSubmit={handleSubmit}/>
-      <MovieGrid movies={movies} onSelect={handleSelect}/>
+      {isSuccess && totalPages > 1 && 
+        <Pagination
+          totalPages={totalPages}
+          page={currentPage}
+          setPage={setCurrentPage}
+        />
+      }
+      {data && data.results.length > 0 && 
+        <MovieGrid movies={data.results} onSelect={handleSelect} />
+      }
     </>
   );
 }
